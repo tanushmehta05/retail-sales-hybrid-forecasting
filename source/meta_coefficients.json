@@ -1,0 +1,5 @@
+{
+  "CatBoost_prediction_coefficient": -0.22399143311315617,
+  "LightGBM_prediction_coefficient": 1.2248239586602119,
+  "Intercept": -11.996650112292627
+}
