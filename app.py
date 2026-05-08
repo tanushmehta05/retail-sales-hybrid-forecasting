@@ -1736,6 +1736,19 @@ def metric_card(label: str, value: str, note: str = "") -> None:
     )
 
 
+def coefficient_card(label: str, value: str, note: str, tip: str) -> None:
+    st.markdown(
+        f"""
+        <div class="metric-card hover-tip" data-tip="{tip}">
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+            <div class="metric-note">{note}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_pills(items: list[str]) -> None:
     pills = "".join(f'<span class="pill">{item}</span>' for item in items)
     st.markdown(f'<div class="pill-row">{pills}</div>', unsafe_allow_html=True)
@@ -2405,21 +2418,38 @@ Input features
     meta = meta_dict()
     if meta:
         st.markdown("### Learned Meta-Learner Coefficients")
+        st.markdown(
+            """
+            <div class="soft-band hover-tip" data-tip="These values belong to the Ridge Regression meta-learner. They explain how the final stacking model combines the two base model predictions.">
+                <strong>What this means:</strong> the hybrid model first gets one prediction from CatBoost and one prediction from LightGBM.
+                Ridge Regression then applies these learned coefficients and the intercept to produce the final weekly sales forecast.
+                Hover over each card for the presentation definition.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         coef_cols = st.columns(3)
         with coef_cols[0]:
-            metric_card(
+            coefficient_card(
                 "CatBoost coefficient",
                 f"{meta.get('CatBoost_prediction_coefficient', 0):.4f}",
-                "Base prediction weight learned by Ridge",
+                "Ridge multiplier for CatBoost prediction",
+                "This is the learned multiplier applied to the CatBoost base prediction inside the Ridge stacking model. A negative value means Ridge uses CatBoost as a correction signal after considering LightGBM, not that CatBoost is useless.",
             )
         with coef_cols[1]:
-            metric_card(
+            coefficient_card(
                 "LightGBM coefficient",
                 f"{meta.get('LightGBM_prediction_coefficient', 0):.4f}",
-                "Base prediction weight learned by Ridge",
+                "Ridge multiplier for LightGBM prediction",
+                "This is the learned multiplier applied to the LightGBM base prediction. Since LightGBM has the best MAE in the results, Ridge gives it the strongest positive influence in the final hybrid forecast.",
             )
         with coef_cols[2]:
-            metric_card("Intercept", f"{meta.get('Intercept', 0):.4f}", "Ridge adjustment term")
+            coefficient_card(
+                "Intercept",
+                f"{meta.get('Intercept', 0):.4f}",
+                "Final Ridge adjustment term",
+                "The intercept is a small constant adjustment added after multiplying the CatBoost and LightGBM predictions by their coefficients.",
+            )
     else:
         st.warning(f"Missing or unreadable coefficient file: {source_label('meta_coefficients.json')}")
 
